@@ -172,16 +172,24 @@ export default function RentalPage() {
     }
   }, [form.customerId, customers]);
 
-  useEffect(() => {
-    const total = calculateTotal(form.fee, form.date, form.dueDate);
-    const discount = (Number(form.pointsUsed) || 0); 
-    const final = total ?  Math.max(0, Number(total) - discount).toFixed(2) : "";
-    setForm((prev) => ({
-      ...prev,
-      total: total,
-      finalTotal: final,
+ useEffect(() => {
+    const totalBeforeDiscount = calculateTotal(form.fee, form.date, form.dueDate);
+    const discount = Number(form.pointsToUse) || 0;
 
-    }));
+    let finalValue = "";
+    if (totalBeforeDiscount) {
+      finalValue = Math.max(0, Number(totalBeforeDiscount) - discount).toFixed(2);
+    }
+
+    setForm((prev) => {
+      // Only update if something actually changed to avoid loop
+      if (prev.total === totalBeforeDiscount && prev.finalTotal === finalValue) return prev;
+      return {
+        ...prev,
+        total: totalBeforeDiscount,
+        finalTotal: finalValue,
+      };
+    });
   }, [form.fee, form.date, form.dueDate, form.pointsToUse]);
 
   if (loading) {
@@ -257,7 +265,8 @@ export default function RentalPage() {
               name="fee"
               value={form.fee}
               onChange={handleChange}
-              className="w-full rounded-md px-3 py-2 bg-gray-50 text-gray-700 focus:ring-2 focus:ring-blue-400"
+              className="w-full rounded-md px-3 py-2 bg-gray-50 text-gray-700  focus:ring-2 focus:ring-blue-400"
+              disabled
             />
           </Field>
 

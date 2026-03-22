@@ -53,7 +53,7 @@ export default function ReturnCarPage() {
         ...prev,
         daysElapsed: 0,
         fine: 0,
-        totalAmount: prev.rentalFee, // ค่าเช่าเดิม
+        totalAmount: prev.rentalFee,
       }));
       return;
     }
@@ -66,7 +66,7 @@ export default function ReturnCarPage() {
       fine: fine,
       totalAmount: Number(prev.rentalFee) + fine,
     }));
-  }, [form.date]);
+  }, [form.date, form.rentalDueDate, form.rentalFee]);
 
   useEffect(() => {
     loadRentals();
@@ -80,7 +80,8 @@ export default function ReturnCarPage() {
   };
 
   const handleOk = async () => {
-    if (!form.rentalId || !form.date) return;
+    if (!form.rentalId) return alert("Please select a rental from the table on the right first!");
+    if (!form.date) return alert("Please select an Actual Return Date!");
 
     const payload = {
       actual_return_date: form.date,
@@ -133,21 +134,23 @@ export default function ReturnCarPage() {
         </h2>
 
         <div className="space-y-4">
-          <Field label="Car Id">
+          <Field label="Car Id (Select from table)">
             <input
               name="carId"
               value={form.carId}
-              onChange={handleChange}
-              className="w-full rounded-md px-3 py-2 bg-gray-50 text-gray-700 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+              readOnly
+              placeholder="Pick from table ->"
+              className="w-full rounded-md px-3 py-2 bg-gray-100 text-gray-500 cursor-not-allowed border border-gray-200"
             />
           </Field>
 
-          <Field label="Customer Id">
+          <Field label="Customer Id (Select from table)">
             <input
               name="customerId"
               value={form.customerId}
-              onChange={handleChange}
-              className="w-full rounded-md px-3 py-2 bg-gray-50 text-gray-700 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+              readOnly
+              placeholder="Pick from table ->"
+              className="w-full rounded-md px-3 py-2 bg-gray-100 text-gray-500 cursor-not-allowed border border-gray-200"
             />
           </Field>
 

@@ -1,8 +1,8 @@
 "use client";
 
+import { supabase } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { supabase } from "@/utils/supabase/client";
 import MyProfileModal from "./MyProfileModal";
 
 export default function Navbar() {
@@ -35,7 +35,7 @@ export default function Navbar() {
   return (
     <nav className="w-full bg-primary text-white shadow-md">
       <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
-        <a href="/today-rental" className="text-xl font-bold hover:opacity-90">
+        <a href="" className="text-xl font-bold hover:opacity-90">
           Car Rental System
         </a>
         <div className="flex gap-6 text-sm font-medium">
@@ -53,6 +53,10 @@ export default function Navbar() {
               <a href="/return" className="hover:text-gray-200">
                 Return
               </a>
+               <a href="/today-rental" className="hover:text-gray-200">
+                Status
+              </a>
+
 
               <button onClick={handleLogout} className="hover:text-gray-200">
                 Logout
