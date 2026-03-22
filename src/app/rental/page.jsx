@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import useAuth from "@/hook/useAuth";
+import { useEffect, useState } from "react";
 
 export default function RentalPage() {
   const { loading } = useAuth("admin");
@@ -14,6 +14,9 @@ export default function RentalPage() {
     date: "",
     dueDate: "",
     total: "",
+    pointsUsed: "",
+    availablePoints: "",
+    finalTotal:"",
   });
   const [cars, setCars] = useState([]);
   const [customers, setCustomers] = useState([]);
@@ -49,6 +52,7 @@ export default function RentalPage() {
       id: c.id,
       customerId: c.customer_id,
       name: c.customer_name,
+      rewardPoints: c.reward_points || 0,
     }));
 
     setCustomers(mapped);
@@ -83,13 +87,18 @@ export default function RentalPage() {
     );
     if (!selectedCustomer) return alert("Customer not found");
 
+    const pointUsed = Number(form.pointsUsed) || 0;
+    const finalAmt = Number(form.finalTotal) || Number(form.total);
+
     const payload = {
       car_id: selectedCar.id,
       customer_id: selectedCustomer.id, // ⭐ ใช้ PK
       rental_fee: Number(form.fee),
       rental_date: form.date,
       due_date: form.dueDate,
-      total_amount: Number(form.total),
+      total_amount: finalAmt,
+      point_used: pointUsed,
+      discont_amount: pointUsed, // สมมติ 1 point = $0.10 discount
     };
 
     const res = await fetch("/api/rentals", {
@@ -102,6 +111,9 @@ export default function RentalPage() {
 
     if (res.ok) {
       alert("Rental saved!");
+      await loadRentals();
+      await loadCars();
+      await loadCustomers();
       handleCancel();
     } else {
       alert(result.error);
@@ -117,6 +129,9 @@ export default function RentalPage() {
       date: "",
       dueDate: "",
       total: "",
+      pointsToUse: "",
+      availablePoints: "",
+      finalTotal:"",
     });
   };
 
@@ -141,7 +156,7 @@ export default function RentalPage() {
 
   useEffect(() => {
     if (!form.customerId) {
-      setForm((prev) => ({ ...prev, customerName: "" }));
+      setForm((prev) => ({ ...prev, customerName: "" , availablePoints: 0, pointsToUse: ""}));
       return;
     }
 
@@ -151,18 +166,23 @@ export default function RentalPage() {
       setForm((prev) => ({
         ...prev,
         customerName: selected.name,
+        availablePoints: selected.rewardPoints,
+        pointsToUse: "",
       }));
     }
   }, [form.customerId, customers]);
 
   useEffect(() => {
     const total = calculateTotal(form.fee, form.date, form.dueDate);
-
+    const discount = (Number(form.pointsUsed) || 0); 
+    const final = total ?  Math.max(0, Number(total) - discount).toFixed(2) : "";
     setForm((prev) => ({
       ...prev,
       total: total,
+      finalTotal: final,
+
     }));
-  }, [form.fee, form.date, form.dueDate]);
+  }, [form.fee, form.date, form.dueDate, form.pointsToUse]);
 
   if (loading) {
     return (
@@ -215,13 +235,20 @@ export default function RentalPage() {
 
           {/* Customer Name */}
           <Field label="Customer Name">
-            <input
-              name="customerName"
-              value={form.customerName}
-              onChange={handleChange}
-              className="w-full rounded-md px-3 py-2 bg-gray-50 text-gray-600"
-              disabled
-            />
+            <div className="flex items-center gap-4">
+              <input
+                name="customerName"
+                value={form.customerName}
+                onChange={handleChange}
+                className="w-full rounded-md px-3 py-2 bg-gray-50 text-gray-600"
+                disabled
+              />
+              {form.customerId && (
+                <div className="text-sm font-semibold text-emerald-600 whitespace-nowrap">
+                  ⭐ Points: {form.availablePoints}
+                </div>
+              )}
+            </div>
           </Field>
 
           {/* Rental Fee */}
@@ -256,15 +283,36 @@ export default function RentalPage() {
             />
           </Field>
 
-          {/* Total */}
-          <Field label="Total">
+           {/* Use Points */}
+          <Field label={`Use Points (Max: ${form.availablePoints})`}>
             <input
-              name="total"
-              value={form.total}
-              readOnly
-              className="w-full rounded-md px-3 py-2 bg-gray-100 text-gray-600 cursor-not-allowed"
+              type="number"
+              name="pointsToUse"
+              value={form.pointsToUse}
+              onChange={(e) => {
+                let val = Number(e.target.value);
+                if (val < 0) val = 0;
+                if (val > form.availablePoints) val = form.availablePoints;
+                if (form.total && val > Number(form.total)) val = Number(form.total);
+                setForm((prev) => ({ ...prev, pointsToUse: val || "" }));
+              }}
+              min="0"
+              max={form.availablePoints}
+              placeholder="0"
+              className="w-full rounded-md px-3 py-2 bg-gray-50 text-gray-700 focus:ring-2 focus:ring-blue-400"
             />
           </Field>
+
+          {/* Final Total */}
+          <Field label="Final Total (After Discount)">
+            <input
+              name="finalTotal"
+              value={form.finalTotal}
+              readOnly
+              className="w-full rounded-md px-3 py-2 bg-blue-50 text-blue-700 font-bold border border-blue-200 cursor-not-allowed"
+            />
+          </Field>
+
 
           {/* BUTTONS */}
           <div className="flex gap-4 pt-4">
@@ -306,7 +354,6 @@ export default function RentalPage() {
                 <tr
                   key={i}
                   className="hover:bg-gray-50"
-                  onClick={() => handleSelectRental(rental.rental_id)}
                 >
                   <td className="px-3 py-2">
                     <div className="flex gap-1 items-center">

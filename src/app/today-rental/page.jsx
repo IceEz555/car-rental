@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import useAuth from "@/hook/useAuth";
+import { useEffect, useState } from "react";
 
 export default function TodayRental() {
   const { loading } = useAuth("admin");
@@ -133,7 +133,6 @@ export default function TodayRental() {
                 <tr
                   key={i}
                   className="hover:bg-gray-50"
-                  onClick={() => handleSelectRental(rental.rental_id)}
                 >
                   <td className="px-3 py-2">
                     <div className="flex gap-1 items-center">

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import useAuth from "@/hook/useAuth";
+import { useEffect, useState } from "react";
 
 export default function ReturnCarPage() {
   const { loading } = useAuth("admin");
@@ -83,11 +83,11 @@ export default function ReturnCarPage() {
     if (!form.rentalId || !form.date) return;
 
     const payload = {
-      return_date: form.date,
+      actual_return_date: form.date,
       days_elapsed: Number(form.daysElapsed),
       fine_amount: Number(form.fine),
-      final_total_amount: Number(form.totalAmount),
-      rental_status: "Returned",
+      total_amount_after_fine: Number(form.totalAmount),
+      rental_status: "RETURNED",
     };
 
     const res = await fetch(`/api/rentals/${form.rentalId}`, {
@@ -97,10 +97,12 @@ export default function ReturnCarPage() {
     });
 
     if (!res.ok) {
-      console.error("Update failed");
+      const err = await res.json()
+      alert(`Update Failed ${err.error || res.statusText}`)
       return;
     }
 
+    alert("Car returned succesfully! Reward points earned")
     await loadRentals();
 
     setForm({
@@ -257,12 +259,12 @@ export default function ReturnCarPage() {
                   </td>
                   <td className="px-3 py-2">{rental.rental_due_date}</td>
                   <td className="px-3 py-2">
-                    {rental.rental_status === "Returned"
+                    {rental.rental_status === "RETURNED"
                       ? rental.days_elapsed
                       : "Not returned yet"}
                   </td>
                   <td className="px-3 py-2">
-                    {rental.rental_status === "Returned"
+                    {rental.rental_status === "RETURNED"
                       ? rental.fine_amount
                       : "Not returned yet"}
                   </td>
