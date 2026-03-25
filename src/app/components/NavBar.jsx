@@ -9,22 +9,64 @@ export default function Navbar() {
   const router = useRouter();
   const [role, setRole] = useState(null);
   const [profile, setProfile] = useState(null);
+  const [points, setPoints] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
+    let channel;
+    async function getUserRole() {
+      const getRole = localStorage.getItem("userRole");
+      if (getRole) {
+        setRole(getRole);
+      }
+      const getProfile = localStorage.getItem("userProfile");
+      if (getProfile) {
+        const parsedProfile = JSON.parse(getProfile);
+        setProfile(parsedProfile);
+        
+        if (getRole === "customer" && parsedProfile.id) {
+          // 1. Fetch current points on load
+          const { data } = await supabase
+            .from("customers")
+            .select("reward_points")
+            .eq("id", parsedProfile.id)
+            .single();
+          if (data) {
+            setPoints(data.reward_points || 0);
+          }
+
+          // 2. Subscribe to database changes (Realtime)
+          channel = supabase
+            .channel("realtime-points")
+            .on(
+              "postgres_changes",
+              {
+                event: "UPDATE",
+                schema: "public",
+                table: "customers",
+                filter: `id=eq.${parsedProfile.id}`,
+              },
+              (payload) => {
+                if (payload.new && payload.new.reward_points !== undefined) {
+                  setPoints(payload.new.reward_points || 0);
+                }
+              }
+            )
+            .subscribe();
+        }
+      }
+    }
+    
     getUserRole();
+
+    // Cleanup subscription when component unmounts
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
   }, []);
 
-  const getUserRole = async () => {
-    const getRole = localStorage.getItem("userRole");
-    if (getRole) {
-      setRole(getRole);
-    }
-    const getProfile = localStorage.getItem("userProfile");
-    if (getProfile) {
-      setProfile(JSON.parse(getProfile));
-    }
-  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -63,8 +105,12 @@ export default function Navbar() {
               </button>
             </>
           )}
-          {role === "customer" && (
+          {role === "customer" && profile && (
             <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1 bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full
+              text-xs font-bold shadow-sm">
+               ⭐ {points} Pts
+              </div>
               <button
                 onClick={() => setIsModalOpen(true)}
                 className="hover:underline text-left"

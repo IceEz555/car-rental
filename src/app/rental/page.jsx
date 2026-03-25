@@ -87,7 +87,7 @@ export default function RentalPage() {
     );
     if (!selectedCustomer) return alert("Customer not found");
 
-    const pointUsed = Number(form.pointsUsed) || 0;
+    const pointUsed = Number(form.pointsToUse) || 0;
     const finalAmt = Number(form.finalTotal) || Number(form.total);
 
     const payload = {
@@ -97,8 +97,8 @@ export default function RentalPage() {
       rental_date: form.date,
       due_date: form.dueDate,
       total_amount: finalAmt,
-      point_used: pointUsed,
-      discont_amount: pointUsed, // สมมติ 1 point = $0.10 discount
+      points_used: pointUsed,
+      discountAmount: pointUsed,
     };
 
     const res = await fetch("/api/rentals", {
